@@ -13,8 +13,6 @@ export default function DayList(props){
       />
     );
   });
-  console.log(DayListRendered);
-
   return (
     <ul>
       {DayListRendered}
