@@ -23,21 +23,48 @@ export default function Application(props) {
       ...state.appointments,
       [id]: appointment
     };
-    setState({
-      ...state,
-      appointments
-    });
+    axios
+      .put(`/api/appointments/${id}`, appointment)
+      .then(res => console.log(`Keep waiting, received status code: ${res.status}`))
+      .then (() => {
+        console.log(`Saved successfully`);
+        setState({
+          ...state,
+          appointments
+        });
+      })
+  }
+
+  function deleteInterview(id, interview) {
+    const appointment = {
+      ...state.appointments[id],
+      interview: { ...interview }
+    };
+    const appointments = {
+      ...state.appointments,
+      [id]: appointment
+    };
+    axios
+      .delete(`/api/appointments/${id}`, appointment)
+      .then(res => console.log(`Keep waiting, received status code: ${res.status}`))
+      .then (() => {
+        console.log(`Deleted successfully`);
+        setState({
+          ...state,
+          appointments
+        });
+      })
   }
 
   useEffect(()=>{Promise.all([
     axios.get('/api/days'),
     axios.get('/api/appointments'),
     axios.get('/api/interviewers')
-  ]).then(all=>{
-    setState(prev =>({...prev, days:all[0].data, appointments: all[1].data, interviewers: all[2].data}))
-  })},[]);
+    ]).then(all=>{
+      setState(prev =>({...prev, days:all[0].data, appointments: all[1].data, interviewers: all[2].data}))
+    })},[]);
+
   const dailyAppointments = getAppointmentsForDay(state,state.day);
-  //const dailyInterviewers = getInterviewersForDay(state, state.day);
 
   const schedule = dailyAppointments.map((appointment) => {
     const interview = getInterview(state, appointment.interview);
@@ -51,6 +78,7 @@ export default function Application(props) {
         interview={interview}
         interviewers={dailyInterviewers}
         bookInterview={bookInterview}
+        deleteInterview={deleteInterview}
       />
     );
   });
