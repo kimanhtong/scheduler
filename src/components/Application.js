@@ -14,6 +14,7 @@ export default function Application(props) {
     interviewers: {}
   });
   const setDay = day => setState({ ...state, day });
+
   function bookInterview(id, interview) {
     const appointment = {
       ...state.appointments[id],
@@ -23,37 +24,43 @@ export default function Application(props) {
       ...state.appointments,
       [id]: appointment
     };
-    axios
+    const saveToServer = axios
       .put(`/api/appointments/${id}`, appointment)
       .then(res => console.log(`Keep waiting, received status code: ${res.status}`))
       .then (() => {
-        console.log(`Saved successfully`);
         setState({
           ...state,
           appointments
         });
+        return Promise.resolve('Saved!');
       })
+      .catch(res => {
+        console.log(res);
+        return Promise.reject('Error Saving!');
+      })
+    return saveToServer;
   }
 
-  function deleteInterview(id, interview) {
-    const appointment = {
-      ...state.appointments[id],
-      interview: { ...interview }
-    };
-    const appointments = {
-      ...state.appointments,
-      [id]: appointment
-    };
-    axios
-      .delete(`/api/appointments/${id}`, appointment)
+  function deleteInterview(id) {
+    const {
+      [id]: appointment,
+      ...appointments
+    } = {...state.appointments};
+
+    const deleteFromServer = axios
+      .delete(`/api/appointments/${id}`)
       .then(res => console.log(`Keep waiting, received status code: ${res.status}`))
       .then (() => {
-        console.log(`Deleted successfully`);
         setState({
-          ...state,
-          appointments
+          ...state
         });
+        return Promise.resolve('Deleted!');
       })
+      .catch(res => {
+        console.log(res);
+        return Promise.reject('Error Deleting!');
+      })
+    return deleteFromServer;
   }
 
   useEffect(()=>{Promise.all([

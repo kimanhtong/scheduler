@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import '../Appointment/styles.scss';
 import Header from './Header';
 import Show from './Show';
@@ -6,6 +6,7 @@ import Empty from './Empty';
 import Form from './Form';
 import Status from './Status';
 import Confirm from './Confirm';
+import Error from './Error';
 import useVisualMode from 'hooks/useVisualMode';
 
 export default function Appointment(props) {
@@ -16,32 +17,34 @@ export default function Appointment(props) {
   const DELETING = "DELETING";
   const CONFIRM = "CONFIRM";
   const EDIT = "EDIT";
+  const ERROR_SAVE = "ERROR_SAVE";
+  const ERROR_DELETE = "ERROR_DELETE";
   const { mode, transition, back } = useVisualMode(
     props.interview ? SHOW : EMPTY
   );
-  const t = 1010; // waiting time
   function save(name, interviewer) {
     const interview = {
       student: name,
       interviewer
     };
-    props.bookInterview(props.id, interview);
     transition(SAVING);
-    setTimeout(() => {
-      transition(SHOW)
-    }, t);
+    props
+    .bookInterview(props.id, interview)
+    .then(() => transition(SHOW))
+    .catch(error => {
+      console.log(error);
+      transition(ERROR_SAVE, true);
+    })
   }
-  function del (name, interviewer) {
-    const interview = {
-      student: name,
-      interviewer
-    };
-    props.deleteInterview(props.id, interview);
-    console.log(`Waiting for deleting data to server ${t/1000} seconds`);
-    transition(DELETING);
-    setTimeout(() => {
-      transition(EMPTY);
-    }, t);
+  function destroy() {
+    transition(DELETING, true);
+    props
+    .deleteInterview(props.id)
+    .then (()=>transition(EMPTY))
+    .catch(error => {
+      console.log(error);
+      transition(ERROR_DELETE);
+    })
   }
 
   return (
@@ -56,11 +59,13 @@ export default function Appointment(props) {
           onEdit={()=>{transition(EDIT)}}
         />
       )}
-      {mode === CREATE && <Form interviewers={props.interviewers} onCancel={back} onSave={save} onDelete={del}/>}
-      {mode === SAVING && <Status message = {'Saving'} />}
-      {mode === DELETING && <Status message = {'Deleting'} />}
-      {mode === CONFIRM && <Confirm message = {'Delete? ... Really?'} onCancel={back} onConfirm={del}/>}
-      {mode === EDIT && <Form interviewers={props.interviewers} interviewer={props.interview.interviewer.id} value={props.interview.interviewer.id} student={props.interview.student} onCancel={back} onSave={save} onDelete={del}/>}
+      {mode === CREATE && <Form interviewers={props.interviewers} onCancel={back} onSave={save} onDelete={destroy}/>}
+      {mode === SAVING && <Status message = {'Saving...'} />}
+      {mode === DELETING && <Status message = {'Deleting...'} />}
+      {mode === CONFIRM && <Confirm message = {'Delete? ... Really?'} onCancel={back} onConfirm={destroy}/>}
+      {mode === EDIT && <Form interviewers={props.interviewers} interviewer={props.interview.interviewer.id} value={props.interview.interviewer.id} student={props.interview.student} onCancel={back} onSave={save}/>}
+      {mode === ERROR_SAVE && <Error message={'Error saving encountered. Sorry!'} onClose={back} />}
+      {mode === ERROR_DELETE && <Error message={'Error deleting encountered. Sorry!'} onClose={back} />}
     </article>
   )
 }
