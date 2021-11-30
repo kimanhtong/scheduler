@@ -27,35 +27,43 @@ export default function useApplicationData() {
       ...state.appointments,
       [id]: appointment
     };
+    const freeSpotChanged = -1;
+
     const saveToServer = axios
       .put(`/api/appointments/${id}`, appointment)
-      .then(res => console.log(`Keep waiting, received status code: ${res.status}`))
+      .then(res => console.log(`Received status code (adding): ${res.status}`))
       .then (() => {
+        const days = updateSpots(id, freeSpotChanged);
         setState({
           ...state,
-          appointments
+          appointments,
+          days
         });
         return Promise.resolve('Saved!');
       })
       .catch(res => {
         console.log(res);
+        setState({
+          ...state
+        });
         return Promise.reject('Error Saving!');
       })
     return saveToServer;
   }
 
   function cancelInterview(id) {
-    const {
-      [id]: appointment,
-      ...appointments
-    } = {...state.appointments};
-
+    const appointments = {...state.appointments};
+    const freeSpotChanged = 1;
+    appointments[id].interview = null;
     const deleteFromServer = axios
       .delete(`/api/appointments/${id}`)
-      .then(res => console.log(`Keep waiting, received status code: ${res.status}`))
+      .then(res => console.log(`Received status code (removing): ${res.status}`))
       .then (() => {
+        const days = updateSpots(id, freeSpotChanged);
         setState({
-          ...state
+          ...state,
+          appointments,
+          days
         });
         return Promise.resolve('Deleted!');
       })
@@ -64,6 +72,16 @@ export default function useApplicationData() {
         return Promise.reject('Error Deleting!');
       })
     return deleteFromServer;
+  }
+
+  const updateSpots = (id, dif) => {
+    const newDays = [...state.days];
+    newDays.forEach(item => {
+      if (item.appointments.indexOf(id) > -1) {
+        item.spots += dif;
+      }
+    });
+    return newDays;
   }
 
   return {

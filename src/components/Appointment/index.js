@@ -19,6 +19,7 @@ export default function Appointment(props) {
   const EDIT = "EDIT";
   const ERROR_SAVE = "ERROR_SAVE";
   const ERROR_DELETE = "ERROR_DELETE";
+  const ERROR_SAVE_VALIDATION = "ERROR_SAVE_VALIDATION";
   const { mode, transition, back } = useVisualMode(
     props.interview ? SHOW : EMPTY
   );
@@ -27,14 +28,18 @@ export default function Appointment(props) {
       student: name,
       interviewer
     };
-    transition(SAVING);
-    props
-    .bookInterview(props.id, interview)
-    .then(() => transition(SHOW))
-    .catch(error => {
-      console.log(error);
-      transition(ERROR_SAVE, true);
-    })
+    if (name === '' || interviewer === null) {
+      transition(ERROR_SAVE_VALIDATION);
+    } else {
+      transition(SAVING);
+      props
+      .bookInterview(props.id, interview)
+      .then(() => transition(SHOW))
+      .catch(error => {
+        console.log(error);
+        transition(ERROR_SAVE, true);
+      })
+    }
   }
   function destroy() {
     transition(DELETING, true);
@@ -66,6 +71,7 @@ export default function Appointment(props) {
       {mode === EDIT && <Form interviewers={props.interviewers} interviewer={props.interview.interviewer.id} value={props.interview.interviewer.id} student={props.interview.student} onCancel={back} onSave={save}/>}
       {mode === ERROR_SAVE && <Error message={'Error saving encountered. Sorry!'} onClose={back} />}
       {mode === ERROR_DELETE && <Error message={'Error deleting encountered. Sorry!'} onClose={back} />}
+      {mode === ERROR_SAVE_VALIDATION && <Error message={'Both student and interviewer are required. Please fill them out'} onClose={back} />}
     </article>
   )
 }
